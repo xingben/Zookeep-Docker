@@ -1,19 +1,21 @@
-FROM ubuntu:14.04
+FROM gliderlabs/alpine:3.3
 
-RUN apt-get update && \
-apt-get install -y curl openjdk-7-jre-headless python
+LABEL name="zookeeper" version="3.4.6"
 
-# https://www.apache.org/mirrors/dist.html
-RUN curl -fL http://apache.mirror.digitalpacific.com.au/zookeeper/stable/zookeeper-3.4.6.tar.gz | tar xzf - -C /opt && \
-mv /opt/zookeeper-3.4.6 /opt/zookeeper
+RUN apk-install openjdk7-jre wget bash 
+RUN mkdir /opt \
+    && wget -q -O - http://apache.mirrors.pair.com/zookeeper/zookeeper-3.4.6/zookeeper-3.4.6.tar.gz | tar -xzf - -C /opt \
+    && mv /opt/zookeeper-3.4.6 /opt/zookeeper \
+    && cp /opt/zookeeper/conf/zoo_sample.cfg /opt/zookeeper/conf/zoo.cfg \
+    && mkdir -p /tmp/zookeeper
 
-VOLUME /tmp/zookeeper
+ENV JAVA_HOME /usr/lib/jvm/java-1.7-openjdk
 
-COPY zoo.cfg /opt/zookeeper/conf/
-COPY EntryPoint.sh /
-COPY myid /tmp/zookeeper/
-ENTRYPOINT ["/EntryPoint.sh"]
+EXPOSE 2181 2888 3888
 
-ENV PATH /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/zookeeper/bin
+WORKDIR /opt/zookeeper
 
-CMD ["zkServer.sh", "start-foreground"]
+VOLUME ["/opt/zookeeper/conf", "/tmp/zookeeper"]
+
+ENTRYPOINT ["/opt/zookeeper/bin/zkServer.sh"]
+CMD ["start-foreground"]
